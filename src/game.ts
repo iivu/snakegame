@@ -41,7 +41,8 @@ class MainScene extends Phaser.Scene {
   private direction: Direction = Direction.RIGHT;
   private speed = 8;
   private movePoints: Array<Pick<Body, 'x' | 'y' | 'direction' | 'midLine'>> = [];
-  private bodyPolygon: Phaser.GameObjects.Graphics | null = null;
+  private bodyPolygon1: Phaser.GameObjects.Graphics | null = null;
+  private bodyPolygon2: Phaser.GameObjects.Graphics | null = null;
   // input lock
   private inputLock = false;
   private distanceAfterLastInput = 0;
@@ -82,7 +83,7 @@ class MainScene extends Phaser.Scene {
         { x: 0, y: 0 },
       ],
     });
-    Array(3)
+    Array(5)
       .fill(1)
       .forEach((_, index) => {
         const prev = body[index];
@@ -121,7 +122,8 @@ class MainScene extends Phaser.Scene {
       }
     });
     this.movePoints.forEach((p, index) => this.updateMidLine(p, index));
-    // this.bodyPolygon = this.add.graphics({ fillStyle: { color: 0x0ea5e9 } });
+    this.bodyPolygon1 = this.add.graphics({ fillStyle: { color: 0x0ea5e9 } });
+    this.bodyPolygon2 = this.add.graphics({ fillStyle: { color: 0x0ea5e9 } });
     // this.updateBodyPolygon();
     // listen event
     this.input.keyboard?.on('keydown-UP', () => this.processCursorKey(Direction.UP));
@@ -133,8 +135,8 @@ class MainScene extends Phaser.Scene {
   }
 
   update() {
-    // this.moveSnake();
-    // this.updateBodyPolygon();
+    this.moveSnake();
+    this.updateBodyPolygon();
     this.processInputLock();
     this.debug();
   }
@@ -173,7 +175,7 @@ class MainScene extends Phaser.Scene {
       body.x = nextPosition.x;
       body.y = nextPosition.y;
       body.gameObject?.setPosition(body.x, body.y);
-      body.direction = this.getDirection(nextPosition, this.movePoints[body.pIndex - 1])!;
+      body.direction = nextPosition.direction;
       this.updateMidLine(body, body.pIndex);
       if (i === this.body.length - 1) {
         this.movePoints.pop();
@@ -208,26 +210,23 @@ class MainScene extends Phaser.Scene {
   }
 
   updateBodyPolygon() {
-    if (this.bodyPolygon === null) return;
-    const points: Position[] = [];
-    for (let i = 0; i < this.body.length; i++) {
-      const body = this.body[i];
-      points.push(body.midLine[0]);
-    }
-    for (let i = this.body.length - 1; i >= 0; i--) {
-      const body = this.body[i];
-      points.push(body.midLine[1]);
-    }
-    this.bodyPolygon.clear();
-    points.forEach((p, index) => {
-      if (index === 0) {
-        this.bodyPolygon?.moveTo(p.x, p.y);
-      } else {
-        this.bodyPolygon?.lineTo(p.x, p.y);
-      }
+    if (this.bodyPolygon1 === null) return;
+    if (this.bodyPolygon2 === null) return;
+    // this.updateMidLine(this.movePoints[0], 0);
+    // this.bodyPolygon1.clear();
+    // this.bodyPolygon2.clear();
+    // this.bodyPolygon1.beginPath();
+    // this.bodyPolygon2.beginPath();
+    // this.bodyPolygon1.moveTo(this.movePoints[0].midLine[0].x, this.movePoints[0].midLine[0].y);
+    // this.bodyPolygon2.moveTo(this.movePoints[0].midLine[1].x, this.movePoints[0].midLine[1].y);
+    this.movePoints.forEach((p, index) => {
+      // if (index === 0) return;
+      this.updateMidLine(p, index);
+      // this.bodyPolygon1?.lineTo(p.midLine[0].x, p.midLine[0].y);
+      // this.bodyPolygon2?.lineTo(p.midLine[1].x, p.midLine[1].y);
     });
-    this.bodyPolygon.closePath();
-    this.bodyPolygon.fillPath();
+    // this.bodyPolygon1.strokePath();
+    // this.bodyPolygon2.strokePath();
   }
 
   moveHead(body: Body) {
@@ -243,19 +242,18 @@ class MainScene extends Phaser.Scene {
     body.gameObject?.setPosition(body.x, body.y);
     body.direction = this.direction;
     const newMovePoint = { x: body.x, y: body.y, direction: this.direction, midLine: this.getInitMidLine() };
-    this.updateMidLine(newMovePoint, 0);
     this.movePoints.unshift(newMovePoint);
   }
 
   debug() {
     if (this.midLines.length <= 0) {
-      this.body.forEach(() => this.midLines.push(this.add.graphics({ lineStyle: { color: 0xff0000, width: 2 } })));
+      this.movePoints.forEach(() => this.midLines.push(this.add.graphics({ lineStyle: { color: 0x0ea5e9, width: this.speed } })));
     }
     if (this.line === null) {
       this.line = this.add.graphics({ lineStyle: { color: 0xff0000, width: 2 } });
     }
     this.midLines.forEach((g, index) => {
-      const { midLine } = this.body[index];
+      const { midLine } = this.movePoints[index];
       g.clear();
       g.beginPath();
       g.moveTo(midLine[0].x, midLine[0].y);
@@ -263,15 +261,15 @@ class MainScene extends Phaser.Scene {
       g.closePath();
       g.strokePath();
     });
-    this.line.clear();
-    this.body.forEach((b, index) => {
-      if (index === 0) {
-        this.line?.moveTo(b.x, b.y);
-      } else {
-        this.line?.lineTo(b.x, b.y);
-      }
-    });
-    this.line.strokePath();
+    // this.line.clear();
+    // this.body.forEach((b, index) => {
+    //   if (index === 0) {
+    //     this.line?.moveTo(b.x, b.y);
+    //   } else {
+    //     this.line?.lineTo(b.x, b.y);
+    //   }
+    // });
+    // this.line.strokePath();
   }
 
   getDirection(p1: Position, p2: Position) {
