@@ -15,7 +15,7 @@ const App = () => {
   return (
     <section className="w-screen h-screen flex justify-center items-center">
       <div
-        className="w-[800px] h-[800px] rounded-md overflow-hidden"
+        className="w-[600px] h-[600px] rounded-md overflow-hidden"
         id="game-container"
       />
     </section>
