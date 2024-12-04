@@ -26,7 +26,7 @@ export class Game {
       width: 1600,
       height: 1600,
       canvasStyle: 'width: 800px;height:800px',
-      backgroundColor: '#fef9c3',
+      backgroundColor: '#fef9c3'
     });
   }
 
@@ -39,12 +39,18 @@ class MainScene extends Phaser.Scene {
   private body: Array<Body> = [];
   private bodySize = 80;
   private direction: Direction = Direction.RIGHT;
-  private speed = 2;
+  private speed = 8;
   private movePoints: Array<Position> = [];
   private bodyPolygon: Phaser.GameObjects.Graphics | null = null;
+  // input lock
+  private inputLock = false;
+  private distanceAfterLastInput = 0;
+  // debug
+  private midLines: Array<Phaser.GameObjects.Graphics> = [];
+  private line: Phaser.GameObjects.Graphics | null = null;
 
   constructor() {
-    super({ key: 'MainScene' });
+    super('MainScene');
   }
 
   init() {
@@ -61,7 +67,7 @@ class MainScene extends Phaser.Scene {
       gameObject: null,
       pIndex: 0,
       direction: Direction.RIGHT,
-      middleLine: [],
+      middleLine: []
     };
     const body = [head];
     this.movePoints.push({ x: head.x, y: head.y });
@@ -75,7 +81,7 @@ class MainScene extends Phaser.Scene {
           gameObject: null,
           pIndex: 0,
           direction: Direction.RIGHT,
-          middleLine: [],
+          middleLine: []
         };
         body.push(curr);
         let len = this.speed;
@@ -93,33 +99,46 @@ class MainScene extends Phaser.Scene {
           b.x,
           b.y,
           Phaser.Math.Distance.Between(b.middleLine[0], b.middleLine[1], b.middleLine[2], b.middleLine[3]) / 2,
-          0x0ea5e9,
+          0x0ea5e9
         );
       }
     });
     this.bodyPolygon = this.add.graphics({ fillStyle: { color: 0x0ea5e9 } });
     // listen event
-    this.input.keyboard?.on('keydown-UP', () => {
-      if (this.direction === Direction.DOWN) return;
-      this.direction = Direction.UP;
-    });
-    this.input.keyboard?.on('keydown-LEFT', () => {
-      if (this.direction === Direction.RIGHT) return;
-      this.direction = Direction.LEFT;
-    });
-    this.input.keyboard?.on('keydown-DOWN', () => {
-      if (this.direction === Direction.UP) return;
-      this.direction = Direction.DOWN;
-    });
-    this.input.keyboard?.on('keydown-RIGHT', () => {
-      if (this.direction === Direction.LEFT) return;
-      this.direction = Direction.RIGHT;
-    });
+    this.input.keyboard?.on('keydown-UP', () => this.processCursorKey(Direction.UP));
+    this.input.keyboard?.on('keydown-LEFT', () => this.processCursorKey(Direction.LEFT));
+    this.input.keyboard?.on('keydown-DOWN', () => this.processCursorKey(Direction.DOWN));
+    this.input.keyboard?.on('keydown-RIGHT', () => this.processCursorKey(Direction.RIGHT));
   }
 
   update() {
-    // this.moveSnake();
+    this.moveSnake();
     // this.updateBodyPolygon();
+    this.processInputLock();
+    this.debug();
+  }
+
+  processCursorKey(direction: Direction) {
+    if (this.inputLock) return;
+    if (
+      (direction === Direction.UP && this.direction !== Direction.DOWN) ||
+      (direction === Direction.DOWN && this.direction !== Direction.UP) ||
+      (direction === Direction.LEFT && this.direction !== Direction.RIGHT) ||
+      (direction === Direction.RIGHT && this.direction !== Direction.LEFT)
+    ) {
+      this.direction = direction;
+      this.inputLock = true;
+    }
+  }
+
+  processInputLock() {
+    if (this.inputLock) {
+      this.distanceAfterLastInput += this.speed;
+      if (this.distanceAfterLastInput >= this.bodySize) {
+        this.distanceAfterLastInput = 0;
+        this.inputLock = false;
+      }
+    }
   }
 
   moveSnake() {
@@ -152,14 +171,6 @@ class MainScene extends Phaser.Scene {
     });
     this.bodyPolygon?.closePath();
     this.bodyPolygon?.fillPath();
-  }
-
-  getDirection(p1: Position, p2: Position) {
-    if (p2.x === p1.x && p2.y === p1.y) return null;
-    if (p2.x > p1.x) return Direction.RIGHT;
-    if (p2.x < p1.x) return Direction.LEFT;
-    if (p2.y > p1.y) return Direction.DOWN;
-    if (p2.y < p1.y) return Direction.UP;
   }
 
   getMiddleLine(body: Body, index: number): number[] {
@@ -201,7 +212,38 @@ class MainScene extends Phaser.Scene {
     this.movePoints.unshift({ x: body.x, y: body.y });
   }
 
+  getDirection(p1: Position, p2: Position) {
+    if (p2.x === p1.x && p2.y === p1.y) return null;
+    if (p2.x > p1.x) return Direction.RIGHT;
+    if (p2.x < p1.x) return Direction.LEFT;
+    if (p2.y > p1.y) return Direction.DOWN;
+    if (p2.y < p1.y) return Direction.UP;
+  }
+
   debug() {
-    // this.body.forEach(b => )
+    if (this.midLines.length <= 0) {
+      this.body.forEach(() => this.midLines.push(this.add.graphics({ lineStyle: { color: 0xff0000, width: 2 } })));
+    }
+    if (this.line === null) {
+      this.line = this.add.graphics({ lineStyle: { color: 0xff0000, width: 2 } });
+    }
+    // this.midLines.forEach((g, index) => {
+    //   const { midLine } = this.body[index];
+    //   g.clear();
+    //   g.beginPath();
+    //   g.moveTo(midLine[0].x, midLine[0].y);
+    //   g.lineTo(midLine[1].x, midLine[1].y);
+    //   g.closePath();
+    //   g.strokePath();
+    // });
+    this.line.clear();
+    this.body.forEach((b, index) => {
+      if (index === 0) {
+        this.line?.moveTo(b.x, b.y);
+      } else {
+        this.line?.lineTo(b.x, b.y);
+      }
+    });
+    this.line.strokePath();
   }
 }
