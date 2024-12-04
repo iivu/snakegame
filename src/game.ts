@@ -26,7 +26,7 @@ export class Game {
       width: 1600,
       height: 1600,
       canvasStyle: 'width: 800px;height:800px',
-      backgroundColor: '#fef9c3'
+      backgroundColor: '#fef9c3',
     });
   }
 
@@ -67,7 +67,7 @@ class MainScene extends Phaser.Scene {
       gameObject: null,
       pIndex: 0,
       direction: Direction.RIGHT,
-      middleLine: []
+      middleLine: [],
     };
     const body = [head];
     this.movePoints.push({ x: head.x, y: head.y });
@@ -81,7 +81,7 @@ class MainScene extends Phaser.Scene {
           gameObject: null,
           pIndex: 0,
           direction: Direction.RIGHT,
-          middleLine: []
+          middleLine: [],
         };
         body.push(curr);
         let len = this.speed;
@@ -99,7 +99,7 @@ class MainScene extends Phaser.Scene {
           b.x,
           b.y,
           Phaser.Math.Distance.Between(b.middleLine[0], b.middleLine[1], b.middleLine[2], b.middleLine[3]) / 2,
-          0x0ea5e9
+          0x0ea5e9,
         );
       }
     });
@@ -109,12 +109,14 @@ class MainScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-LEFT', () => this.processCursorKey(Direction.LEFT));
     this.input.keyboard?.on('keydown-DOWN', () => this.processCursorKey(Direction.DOWN));
     this.input.keyboard?.on('keydown-RIGHT', () => this.processCursorKey(Direction.RIGHT));
+    // test
+    this.testSmoothPath();
   }
 
   update() {
-    this.moveSnake();
+    // this.moveSnake();
     // this.updateBodyPolygon();
-    this.processInputLock();
+    // this.processInputLock();
     this.debug();
   }
 
@@ -246,4 +248,55 @@ class MainScene extends Phaser.Scene {
     });
     this.line.strokePath();
   }
+
+  testSmoothPath() {
+    const points = [
+      { x: 100, y: 100 },
+      { x: 200, y: 50 },
+      { x: 300, y: 100 },
+      { x: 400, y: 150 },
+      { x: 500, y: 200 },
+      { x: 300, y: 400 },
+    ];
+    // const smoothPoints = generateBezierPoints(points, 100);
+    let graphics = this.add.graphics({ lineStyle: { width: 2, color: 0xff0000 } });
+    let graphicsSmooth = this.add.graphics({ lineStyle: { width: 2, color: 0x0000ff } });
+
+    graphics.beginPath();
+    graphics.moveTo(points[0].x, points[0].y);
+    points.forEach((p) => graphics.lineTo(p.x, p.y));
+    graphics.strokePath();
+
+    graphicsSmooth.beginPath();
+    graphicsSmooth.moveTo(points[0].x, points[0].y);
+    points.forEach((p) => {
+
+    });
+    graphicsSmooth.strokePath();
+  }
+}
+
+function generateBezierPoints(points: Position[], segments: number) {
+  let result = [];
+
+  for (let i = -1; i < points.length - 2; i++) {
+    let p0 = points[Math.max(i, 0)];
+    let p1 = points[i + 1];
+    let p2 = points[i + 2];
+    let p3 = points[Math.min(i + 3, points.length - 1)];
+
+    for (let t = 0; t <= segments; t++) {
+      let tNormalized = t / segments;
+      let t2 = tNormalized * tNormalized;
+      let t3 = t2 * tNormalized;
+
+      let x = 0.5 * (2 * p1.x + (-p0.x + p2.x) * tNormalized + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+
+      let y = 0.5 * (2 * p1.y + (-p0.y + p2.y) * tNormalized + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+
+      result.push({ x, y });
+    }
+  }
+
+  return result;
 }
